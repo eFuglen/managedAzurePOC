@@ -1,0 +1,224 @@
+{
+  "properties": {
+    "displayName": "Azure Monitor Agent Complete Deployment Initiative",
+    "description": "Comprehensive initiative to deploy User-Assigned Managed Identity, Azure Monitor Agent, and associate with Data Collection Rules for Windows VMs with tag-based exclusions.",
+    "metadata": {
+      "version": "1.0.0",
+      "category": "Monitoring"
+    },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Policy Effect",
+          "description": "Enable or disable the execution of all policies in this initiative."
+        },
+        "allowedValues": ["DeployIfNotExists", "AuditIfNotExists", "Disabled"],
+        "defaultValue": "DeployIfNotExists"
+      },
+      "enableExclusionTags": {
+        "type": "Boolean",
+        "metadata": {
+          "displayName": "Enable Exclusion Tags",
+          "description": "When enabled, VMs with specific exclusion tags will be skipped across all policies: excludeFromAMADeployment=true, Monitoring=None, maintenanceWindow=true, exemptFromGovernance=true"
+        },
+        "defaultValue": true
+      },
+      "bringYourOwnUserAssignedManagedIdentity": {
+        "type": "Boolean",
+        "metadata": {
+          "displayName": "Bring Your Own User-Assigned Managed Identity",
+          "description": "If set to true, use pre-created user-assigned managed identity. If false, create built-in identity per location."
+        },
+        "allowedValues": [true, false],
+        "defaultValue": false
+      },
+      "restrictBringYourOwnUserAssignedIdentityToSubscription": {
+        "type": "Boolean",
+        "metadata": {
+          "displayName": "Restrict User-Assigned Identity to Subscription",
+          "description": "Enforce the user assigned identity must exist in the same subscription as the virtual machine."
+        },
+        "allowedValues": [true, false],
+        "defaultValue": true
+      },
+      "userAssignedIdentityResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "User-Assigned Managed Identity Resource ID",
+          "description": "Resource ID of the pre-created user-assigned managed identity (used when restrictBringYourOwnUserAssignedIdentityToSubscription is false)."
+        },
+        "defaultValue": ""
+      },
+      "userAssignedManagedIdentityName": {
+        "type": "String",
+        "metadata": {
+          "displayName": "User-Assigned Managed Identity Name",
+          "description": "Name of the pre-created user-assigned managed identity."
+        },
+        "defaultValue": ""
+      },
+      "userAssignedManagedIdentityResourceGroup": {
+        "type": "String",
+        "metadata": {
+          "displayName": "User-Assigned Managed Identity Resource Group",
+          "description": "Resource group containing the pre-created user-assigned managed identity."
+        },
+        "defaultValue": ""
+      },
+      "builtInIdentityResourceGroupLocation": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Built-In Identity Resource Group Location",
+          "description": "Location for the Built-In-Identity-RG resource group when creating identities automatically."
+        },
+        "defaultValue": "eastus"
+      },
+      "dcrResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Data Collection Rule Resource ID",
+          "description": "Resource ID of the Data Collection Rule to associate with the Azure Monitor Agent."
+        }
+      },
+      "resourceType": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Resource Type for DCR Association",
+          "description": "Type of resource to associate (DCR or DCE)."
+        },
+        "allowedValues": [
+          "Microsoft.Insights/dataCollectionRules",
+          "Microsoft.Insights/dataCollectionEndpoints"
+        ],
+        "defaultValue": "Microsoft.Insights/dataCollectionRules"
+      },
+      "scopeToSupportedImages": {
+        "type": "Boolean",
+        "metadata": {
+          "displayName": "Scope to Supported Images Only",
+          "description": "If true, apply only to VMs with AMA-supported operating systems."
+        },
+        "allowedValues": [true, false],
+        "defaultValue": true
+      },
+      "listOfWindowsImageIdToInclude": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Additional Windows Images",
+          "description": "List of additional Windows VM images to include in scope."
+        },
+        "defaultValue": []
+      }
+    },
+    "policyDefinitions": [
+      {
+        "policyDefinitionReferenceId": "AssignUserAssignedManagedIdentity",
+        "policyDefinitionId": "/subscriptions/[subscription().subscriptionId]/providers/Microsoft.Authorization/policyDefinitions/assignUAMI-vm",
+        "parameters": {
+          "effect": {
+            "value": "[parameters('effect')]"
+          },
+          "bringYourOwnUserAssignedManagedIdentity": {
+            "value": "[parameters('bringYourOwnUserAssignedManagedIdentity')]"
+          },
+          "restrictBringYourOwnUserAssignedIdentityToSubscription": {
+            "value": "[parameters('restrictBringYourOwnUserAssignedIdentityToSubscription')]"
+          },
+          "userAssignedIdentityResourceId": {
+            "value": "[parameters('userAssignedIdentityResourceId')]"
+          },
+          "userAssignedIdentityName": {
+            "value": "[parameters('userAssignedManagedIdentityName')]"
+          },
+          "identityResourceGroup": {
+            "value": "[parameters('userAssignedManagedIdentityResourceGroup')]"
+          },
+          "builtInIdentityResourceGroupLocation": {
+            "value": "[parameters('builtInIdentityResourceGroupLocation')]"
+          },
+          "enableExclusionTags": {
+            "value": "[parameters('enableExclusionTags')]"
+          }
+        },
+        "groupNames": ["Identity"]
+      },
+      {
+        "policyDefinitionReferenceId": "DeployAzureMonitorAgent",
+        "policyDefinitionId": "/subscriptions/[subscription().subscriptionId]/providers/Microsoft.Authorization/policyDefinitions/assignAMA-vm",
+        "parameters": {
+          "effect": {
+            "value": "[parameters('effect')]"
+          },
+          "bringYourOwnUserAssignedManagedIdentity": {
+            "value": "[parameters('bringYourOwnUserAssignedManagedIdentity')]"
+          },
+          "restrictBringYourOwnUserAssignedIdentityToSubscription": {
+            "value": "[parameters('restrictBringYourOwnUserAssignedIdentityToSubscription')]"
+          },
+          "userAssignedIdentityResourceId": {
+            "value": "[parameters('userAssignedIdentityResourceId')]"
+          },
+          "userAssignedManagedIdentityName": {
+            "value": "[parameters('userAssignedManagedIdentityName')]"
+          },
+          "userAssignedManagedIdentityResourceGroup": {
+            "value": "[parameters('userAssignedManagedIdentityResourceGroup')]"
+          },
+          "scopeToSupportedImages": {
+            "value": "[parameters('scopeToSupportedImages')]"
+          },
+          "listOfWindowsImageIdToInclude": {
+            "value": "[parameters('listOfWindowsImageIdToInclude')]"
+          },
+          "enableExclusionTags": {
+            "value": "[parameters('enableExclusionTags')]"
+          }
+        },
+        "groupNames": ["Monitoring"]
+      },
+      {
+        "policyDefinitionReferenceId": "AssociateDataCollectionRule",
+        "policyDefinitionId": "/subscriptions/[subscription().subscriptionId]/providers/Microsoft.Authorization/policyDefinitions/assignDCR-vm",
+        "parameters": {
+          "effect": {
+            "value": "[parameters('effect')]"
+          },
+          "dcrResourceId": {
+            "value": "[parameters('dcrResourceId')]"
+          },
+          "resourceType": {
+            "value": "[parameters('resourceType')]"
+          },
+          "scopeToSupportedImages": {
+            "value": "[parameters('scopeToSupportedImages')]"
+          },
+          "listOfWindowsImageIdToInclude": {
+            "value": "[parameters('listOfWindowsImageIdToInclude')]"
+          },
+          "enableExclusionTags": {
+            "value": "[parameters('enableExclusionTags')]"
+          }
+        },
+        "groupNames": ["DataCollection"]
+      }
+    ],
+    "policyDefinitionGroups": [
+      {
+        "name": "Identity",
+        "displayName": "Identity Management",
+        "description": "Policies for managing user-assigned managed identities on virtual machines."
+      },
+      {
+        "name": "Monitoring",
+        "displayName": "Azure Monitor Agent",
+        "description": "Policies for deploying and configuring Azure Monitor Agent."
+      },
+      {
+        "name": "DataCollection",
+        "displayName": "Data Collection",
+        "description": "Policies for associating VMs with Data Collection Rules and Endpoints."
+      }
+    ]
+  }
+}

@@ -1,0 +1,398 @@
+{
+  "name": "assign-guest-configuration",
+  "type": "Microsoft.Authorization/policyDefinitions",
+  "apiVersion": "2021-06-01",
+  "properties": {
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "displayName": "Assign Guest Configuration to Windows VMs",
+    "description": "Deploy a Guest Configuration assignment to Windows virtual machines and virtual machine scale sets. This policy uses the deployIfNotExists effect to apply any custom Guest Configuration package by providing the content URI, hash, and managed identity.",
+    "metadata": {
+      "category": "Guest Configuration",
+      "version": "1.0.0",
+      "requiredProviders": [
+        "Microsoft.GuestConfiguration"
+      ]
+    },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Enable or disable the execution of this policy"
+        },
+        "allowedValues": [
+          "DeployIfNotExists",
+          "Disabled"
+        ],
+        "defaultValue": "DeployIfNotExists"
+      },
+      "guestConfigurationName": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Guest Configuration Name",
+          "description": "The name of the Guest Configuration assignment (e.g., TimeZone, SecurityBaseline, CustomConfig)"
+        }
+      },
+      "guestConfigurationVersion": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Guest Configuration Version",
+          "description": "The version of the Guest Configuration package"
+        },
+        "defaultValue": "1.0.0"
+      },
+      "guestConfigurationContentUri": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Guest Configuration Content URI",
+          "description": "The URI to the Guest Configuration package (.zip file)"
+        }
+      },
+      "guestConfigurationContentHash": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Guest Configuration Content Hash",
+          "description": "The SHA256 hash of the Guest Configuration package"
+        }
+      },
+      "contentManagedIdentityResourceId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Content Managed Identity Resource ID",
+          "description": "The full resource ID of the user-assigned managed identity used to access the Guest Configuration package"
+        }
+      },
+      "inclusionTagName": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Inclusion Tag Name",
+          "description": "Name of the tag to use for including VMs. Only VMs with this tag will have guest configuration applied."
+        },
+        "defaultValue": "guestConfig"
+      },
+      "inclusionTagValues": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Inclusion Tag Values",
+          "description": "Value of the tag to use for including VMs. Only VMs with tag matching one of these values will have guest configuration applied."
+        },
+        "defaultValue": [
+          "Applied"
+        ]
+      }
+    },
+    "policyRule": {
+      "if": {
+        "anyOf": [
+          {
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "field": "type",
+                    "equals": "Microsoft.Compute/virtualMachines"
+                  },
+                  {
+                    "field": "type",
+                    "equals": "Microsoft.Compute/virtualMachineScaleSets"
+                  }
+                ]
+              },
+              {
+                "field": "tags['aks-managed-orchestrator']",
+                "exists": "false"
+              },
+              {
+                "field": "tags['aks-managed-poolName']",
+                "exists": "false"
+              },
+              {
+                "field": "[concat('tags[', parameters('inclusionTagName'), ']')]",
+                "in": "[parameters('inclusionTagValues')]"
+              },
+              {
+                "anyOf": [
+                  {
+                    "field": "Microsoft.Compute/imagePublisher",
+                    "in": [
+                      "esri",
+                      "incredibuild",
+                      "MicrosoftDynamicsAX",
+                      "MicrosoftSharepoint",
+                      "MicrosoftVisualStudio",
+                      "MicrosoftWindowsDesktop",
+                      "MicrosoftWindowsServerHPCPack"
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "MicrosoftWindowsServer"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageSKU",
+                        "notLike": "2008*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "MicrosoftSQLServer"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "notLike": "SQL2008*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "microsoft-dsvm"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "like": "dsvm-win*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "microsoft-ads"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "in": [
+                          "standard-data-science-vm",
+                          "windows-data-science-vm"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "batch"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "equals": "rendering-windows2016"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "center-for-internet-security-inc"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "like": "cis-windows-server-201*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "pivotal"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "like": "bosh-windows-server*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "field": "Microsoft.Compute/imagePublisher",
+                        "equals": "cloud-infrastructure-services"
+                      },
+                      {
+                        "field": "Microsoft.Compute/imageOffer",
+                        "like": "ad*"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "field": "Microsoft.Compute/virtualMachines/osProfile.windowsConfiguration",
+                            "exists": true
+                          },
+                          {
+                            "field": "Microsoft.Compute/virtualMachines/storageProfile.osDisk.osType",
+                            "like": "Windows*"
+                          },
+                          {
+                            "field": "Microsoft.Compute/VirtualMachineScaleSets/osProfile.windowsConfiguration",
+                            "exists": true
+                          },
+                          {
+                            "field": "Microsoft.Compute/virtualMachineScaleSets/virtualMachineProfile.storageProfile.osDisk.osType",
+                            "like": "Windows*"
+                          }
+                        ]
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "field": "Microsoft.Compute/imageSKU",
+                            "exists": false
+                          },
+                          {
+                            "allOf": [
+                              {
+                                "field": "Microsoft.Compute/imageOffer",
+                                "notLike": "SQL2008*"
+                              },
+                              {
+                                "field": "Microsoft.Compute/imageSKU",
+                                "notLike": "2008*"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/088ab73d-1256-47ae-bea9-9de8e7131f31"
+          ],
+          "type": "Microsoft.GuestConfiguration/guestConfigurationAssignments",
+          "name": "[concat(parameters('guestConfigurationName'), '$pid', uniqueString(policy().assignmentId, policy().definitionReferenceId))]",
+          "existenceCondition": {
+            "field": "Microsoft.GuestConfiguration/guestConfigurationAssignments/complianceStatus",
+            "equals": "Compliant"
+          },
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "parameters": {
+                "vmName": {
+                  "value": "[field('name')]"
+                },
+                "location": {
+                  "value": "[field('location')]"
+                },
+                "type": {
+                  "value": "[field('type')]"
+                },
+                "assignmentName": {
+                  "value": "[concat(parameters('guestConfigurationName'), '$pid', uniqueString(policy().assignmentId, policy().definitionReferenceId))]"
+                },
+                "guestConfigurationName": {
+                  "value": "[parameters('guestConfigurationName')]"
+                },
+                "guestConfigurationVersion": {
+                  "value": "[parameters('guestConfigurationVersion')]"
+                },
+                "guestConfigurationContentUri": {
+                  "value": "[parameters('guestConfigurationContentUri')]"
+                },
+                "guestConfigurationContentHash": {
+                  "value": "[parameters('guestConfigurationContentHash')]"
+                },
+                "contentManagedIdentityResourceId": {
+                  "value": "[parameters('contentManagedIdentityResourceId')]"
+                }
+              },
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                  "vmName": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "assignmentName": {
+                    "type": "string"
+                  },
+                  "guestConfigurationName": {
+                    "type": "string"
+                  },
+                  "guestConfigurationVersion": {
+                    "type": "string"
+                  },
+                  "guestConfigurationContentUri": {
+                    "type": "string"
+                  },
+                  "guestConfigurationContentHash": {
+                    "type": "string"
+                  },
+                  "contentManagedIdentityResourceId": {
+                    "type": "string"
+                  }
+                },
+                "resources": [
+                  {
+                    "condition": "[equals(toLower(parameters('type')), toLower('Microsoft.Compute/virtualMachines'))]",
+                    "apiVersion": "2024-04-05",
+                    "type": "Microsoft.Compute/virtualMachines/providers/guestConfigurationAssignments",
+                    "name": "[concat(parameters('vmName'), '/Microsoft.GuestConfiguration/', parameters('assignmentName'))]",
+                    "location": "[parameters('location')]",
+                    "properties": {
+                      "guestConfiguration": {
+                        "name": "[parameters('guestConfigurationName')]",
+                        "version": "[parameters('guestConfigurationVersion')]",
+                        "contentType": "Custom",
+                        "contentUri": "[parameters('guestConfigurationContentUri')]",
+                        "contentHash": "[parameters('guestConfigurationContentHash')]",
+                        "assignmentType": "ApplyAndAutoCorrect",
+                        "contentManagedIdentity": "[parameters('contentManagedIdentityResourceId')]"
+                      }
+                    }
+                  },
+                  {
+                    "condition": "[equals(toLower(parameters('type')), toLower('Microsoft.Compute/virtualMachineScaleSets'))]",
+                    "apiVersion": "2024-04-05",
+                    "type": "Microsoft.Compute/virtualMachineScaleSets/providers/guestConfigurationAssignments",
+                    "name": "[concat(parameters('vmName'), '/Microsoft.GuestConfiguration/', parameters('assignmentName'))]",
+                    "location": "[parameters('location')]",
+                    "properties": {
+                      "guestConfiguration": {
+                        "name": "[parameters('guestConfigurationName')]",
+                        "version": "[parameters('guestConfigurationVersion')]",
+                        "contentType": "Custom",
+                        "contentUri": "[parameters('guestConfigurationContentUri')]",
+                        "contentHash": "[parameters('guestConfigurationContentHash')]",
+                        "assignmentType": "ApplyAndAutoCorrect",
+                        "contentManagedIdentity": "[parameters('contentManagedIdentityResourceId')]"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

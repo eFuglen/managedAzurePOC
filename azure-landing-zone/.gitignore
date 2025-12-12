@@ -1,0 +1,65 @@
+# Azure Landing Zone .gitignore
+
+# Azure CLI
+.azure/
+
+# Bicep generated files
+*.json
+!policies/**/*.json
+!.github/**/*.json
+
+# PowerShell
+*.ps1xml
+*.psm1
+*.psd1
+
+# Logs
+logs/
+*.log
+
+# Environment specific files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+
+# DSC generated files
+*.mof
+*.meta.mof
+
+# Terraform (if used alongside Bicep)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# ARM template compiled outputs
+*.compiled.json
+
+# Azure DevOps
+.vsts-ci.yml
